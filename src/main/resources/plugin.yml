@@ -1,0 +1,4 @@
+name: NMSProxyPlugin
+version: ${project.version}
+main: me.theminecoder.minecraft.nmsproxy.NMSProxyPlugin
+load: STARTUP
