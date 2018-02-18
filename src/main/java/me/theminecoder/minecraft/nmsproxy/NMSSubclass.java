@@ -1,16 +1,7 @@
 package me.theminecoder.minecraft.nmsproxy;
 
 /**
- * @author theminecoder
+ * @author Hugo Manrique
+ * @since 18/02/2018
  */
-public abstract class NMSSubclass implements NMSProxy {
-
-    protected NMSSubclass(Object... args) {
-
-    }
-
-    @Override
-    public final Object getProxyHandle() {
-        return null;
-    }
-}
+public interface NMSSubclass {}

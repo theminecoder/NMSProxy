@@ -30,52 +30,54 @@ public final class NMSProxyProviderOld {
     private static final Map<Class, Class> proxyToNMSClassMap = Maps.newHashMap();
     private static final Map<Class, Class> nmsToProxyClassMap = Maps.newHashMap();
 
-    private static final Map<Class, DynamicType.Loaded<Object>> proxyToNMSSubclassMap = Maps.newHashMap();
+    private static final Map<Class, DynamicType.Loaded> proxyToNMSSubclassMap = Maps.newHashMap();
 
     private static final Map<Class, Map<Method, Method>> proxyToNmsMethodMap = Maps.newConcurrentMap();
     private static final Map<Class, Map<Method, Field>> proxyToNMSFieldMap = Maps.newConcurrentMap();
 
     public static <T extends NMSSubclass> T constructSubClassedNMSObject(Class<T> clazz, Object... args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        if (clazz.getInterfaces().length <= 0 || NMSProxy.class.isAssignableFrom(clazz.getInterfaces()[0])) {
-            throw new IllegalStateException("Class does not implement a NMSProxy interface!");
+        if (clazz.getInterfaces().length == 0 || NMSProxy.class.isAssignableFrom(clazz.getInterfaces()[0])) {
+            throw new IllegalArgumentException("Class does not implement a NMSProxy interface");
         }
 
         Class<? extends NMSProxy> proxyClass = (Class<? extends NMSProxy>) clazz.getInterfaces()[0];
         registerNMSClasses(proxyClass, false);
 
         DynamicType.Loaded<Object> dynamicType = proxyToNMSSubclassMap.get(proxyClass);
+
         if (dynamicType == null) {
-            DynamicType.Builder<Object> builder = proxyToNMSClassMap.get(proxyClass).isInterface() ? new ByteBuddy().subclass(Object.class).implement(proxyToNMSClassMap.get(proxyClass)) : new ByteBuddy().subclass(proxyToNMSClassMap.get(proxyClass));
-            Class searchType = clazz;
-            Map<String, DynamicType.Builder.MethodDefinition.ParameterDefinition.Initial<Object>> definedMethods = Maps.newHashMap();
-            do {
-                Arrays.stream(searchType.getDeclaredMethods()).forEach(method -> {
+            Class nmsClass = proxyToNMSClassMap.get(proxyClass);
+            DynamicType.Builder<Object> builder = new ByteBuddy().subclass(nmsClass).implement(clazz.getInterfaces());
 
-                    DynamicType.Builder.MethodDefinition.ParameterDefinition.Initial definedMethod = definedMethods.get(method.getName());
-                    if (definedMethod == null) {
-                        definedMethod = builder.defineMethod(method.getName(), method.getReturnType(), method.getModifiers());
-                        definedMethods.put(method.getName(), definedMethod);
-                    }
+            // Subclasses only implement interfaces
+            for (Method method : clazz.getDeclaredMethods()) {
+                builder.defineMethod(method.getName(), method.getReturnType(), method.getModifiers())
+                        .withParameters(Arrays.stream(method.getParameterTypes()).map(type -> {
+                            if (NMSProxy.class.isAssignableFrom(type)) {
+                                registerNMSClasses((Class<? extends NMSProxy>) type);
+                                type = proxyToNMSClassMap.get(type);
+                            }
 
-                    definedMethod.withParameters(Arrays.stream(method.getParameterTypes()).map(type -> {
-                        if (NMSProxy.class.isAssignableFrom(type)) {
-                            registerNMSClasses((Class<? extends NMSProxy>) type);
-                            type = proxyToNMSClassMap.get(type);
-                        }
-                        return type;
-                    }).collect(Collectors.toList())).intercept(Advice.to(NMSProxySubclassAdvice.class).wrap(MethodCall.invoke(method)));
-                });
-
-            } while (!(searchType.getInterfaces().length > 0 && searchType.getInterfaces()[0] == NMSProxy.class));
-
-            Arrays.stream(clazz.getDeclaredConstructors()).forEach(constructor -> {
-                builder.define(constructor).intercept(MethodCall.invoke(constructor));
-            });
+                            return type;
+                        }).collect(Collectors.toList()))
+                        .intercept(Advice.to(NMSProxySubclassAdvice.class).wrap(MethodCall.invoke(method)));
+            }
 
             dynamicType = builder.make().load(NMSProxyPlugin.class.getClassLoader());
             proxyToNMSSubclassMap.put(clazz, dynamicType);
         }
-        return (T) dynamicType.getLoaded().getConstructor(Arrays.stream(args).map(Object::getClass).toArray(Class[]::new)).newInstance(args);
+
+        return newSubclassInstance(dynamicType, args);
+    }
+
+    private static <T extends NMSSubclass> T newSubclassInstance(DynamicType.Loaded dynamicType, Object... args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        return ((DynamicType.Loaded<T>) dynamicType)
+                .getLoaded()
+                .getConstructor(
+                    Arrays.stream(args)
+                        .map(Object::getClass)
+                        .toArray(Class[]::new))
+                .newInstance(args);
     }
 
     public static <T extends NMSProxy> T constructNMSObject(Class<T> clazz, Object... args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
