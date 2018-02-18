@@ -50,6 +50,7 @@ public final class NMSProxyProviderOld {
             DynamicType.Builder<Object> builder = new ByteBuddy().subclass(nmsClass).implement(clazz.getInterfaces());
 
             // Subclasses only implement interfaces
+            // TODO Implement default interface bodies
             for (Method method : clazz.getDeclaredMethods()) {
                 builder.defineMethod(method.getName(), method.getReturnType(), method.getModifiers())
                         .withParameters(Arrays.stream(method.getParameterTypes()).map(type -> {
