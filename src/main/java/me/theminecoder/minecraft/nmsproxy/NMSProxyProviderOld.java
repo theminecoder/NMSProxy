@@ -75,9 +75,9 @@ public final class NMSProxyProviderOld {
         return ((DynamicType.Loaded<T>) dynamicType)
                 .getLoaded()
                 .getConstructor(
-                    Arrays.stream(args)
-                        .map(Object::getClass)
-                        .toArray(Class[]::new))
+                        Arrays.stream(args)
+                                .map(Object::getClass)
+                                .toArray(Class[]::new))
                 .newInstance(args);
     }
 
@@ -182,11 +182,53 @@ public final class NMSProxyProviderOld {
         List<List<Class>> classPosibilitys = Lists.newArrayList();
         Arrays.stream(types).forEach(type -> {
             List<Class> possibleClasses = Lists.newArrayList();
+            if (type == Byte.class) {
+                possibleClasses.add(byte.class);
+            } else if (type == Short.class) {
+                possibleClasses.add(short.class);
+            } else if (type == Integer.class) {
+                possibleClasses.add(int.class);
+            } else if (type == Long.class) {
+                possibleClasses.add(long.class);
+            } else if (type == Float.class) {
+                possibleClasses.add(float.class);
+            } else if (type == Double.class) {
+                possibleClasses.add(double.class);
+            } else if (type == Character.class) {
+                possibleClasses.add(char.class);
+            } else if (type == Boolean.class) {
+                possibleClasses.add(boolean.class);
+            } else if (type == byte.class) {
+                possibleClasses.add(byte.class);
+                type = Byte.class;
+            } else if (type == short.class) {
+                possibleClasses.add(short.class);
+                type = Short.class;
+            } else if (type == int.class) {
+                possibleClasses.add(int.class);
+                type = Integer.class;
+            } else if (type == long.class) {
+                possibleClasses.add(long.class);
+                type = Long.class;
+            } else if (type == float.class) {
+                possibleClasses.add(float.class);
+                type = Float.class;
+            } else if (type == double.class) {
+                possibleClasses.add(double.class);
+                type = Double.class;
+            } else if (type == char.class) {
+                possibleClasses.add(char.class);
+                type = Character.class;
+            } else if (type == boolean.class) {
+                possibleClasses.add(boolean.class);
+                type = Boolean.class;
+            }
             do {
                 possibleClasses.add(type);
                 possibleClasses.addAll(Arrays.asList(type.getInterfaces()));
                 type = type.getSuperclass();
             } while (type != Object.class);
+            possibleClasses.add(Object.class);
             classPosibilitys.add(possibleClasses);
         });
 
