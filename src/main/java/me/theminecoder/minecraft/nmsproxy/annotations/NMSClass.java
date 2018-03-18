@@ -1,5 +1,7 @@
 package me.theminecoder.minecraft.nmsproxy.annotations;
 
+import me.theminecoder.minecraft.nmsproxy.NMSProxyPlugin;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -27,8 +29,8 @@ public @interface NMSClass {
             return prefix;
         }
 
-        public String getClassName(String version, String className) {
-            return (prefix + className).replaceFirst("%version%", version);
+        public String getClassName(String className) {
+            return (prefix + className).replaceFirst("%version%", NMSProxyPlugin.NMS_VERSION);
         }
     }
 
