@@ -27,7 +27,7 @@ public class NMSProxyInvocationMapper {
     private final BiMap<Class, Class> proxyToNMSClassMap;
     private final Map<Class, Map<Method, Method>> proxyToNmsMethodMap = Maps.newConcurrentMap();
     private final Map<Class, Map<Method, Field>> proxyToNMSFieldMap = Maps.newConcurrentMap();
-    private final Table<Class, Class[], Constructor> proxyToNMSConsructorMap = HashBasedTable.create();
+    private final Table<Class, Class[], Constructor> proxyToNMSConstructorMap = HashBasedTable.create();
 
     public NMSProxyInvocationMapper(BiMap<Class, Class> proxyToNMSClassMap) {
         this.proxyToNMSClassMap = proxyToNMSClassMap;
@@ -125,7 +125,7 @@ public class NMSProxyInvocationMapper {
     public Constructor findNMSConstructor(Class<? extends NMSProxy> proxyClass, Class[] fixedArgTypes) throws NoSuchMethodException {
         final Class nmsClass = proxyToNMSClassMap.get(proxyClass);
 
-        Constructor constructor = proxyToNMSConsructorMap.get(nmsClass, fixedArgTypes);
+        Constructor constructor = proxyToNMSConstructorMap.get(nmsClass, fixedArgTypes);
 
         if (constructor == null) {
             AtomicReference<Constructor> constructerSearchRef = new AtomicReference<>();
@@ -143,7 +143,7 @@ public class NMSProxyInvocationMapper {
             }
 
             constructor = constructerSearchRef.get();
-            proxyToNMSConsructorMap.put(nmsClass, fixedArgTypes, constructor);
+            proxyToNMSConstructorMap.put(nmsClass, fixedArgTypes, constructor);
             if (!constructor.isAccessible()) {
                 constructor.setAccessible(true);
             }
