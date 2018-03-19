@@ -1,5 +1,7 @@
 package me.theminecoder.minecraft.nmsproxy.util;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 
 import java.util.Arrays;
@@ -11,6 +13,19 @@ import java.util.function.Predicate;
  */
 public class ClassUtil {
 
+    private static final BiMap<Class, Class> PRIMITIVE_TO_CHECK_CLASS_MAP = HashBiMap.create();
+
+    static {
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Byte.class, byte.class);
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Short.class, short.class);
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Integer.class, int.class);
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Long.class, long.class);
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Float.class, float.class);
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Double.class, double.class);
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Character.class, char.class);
+        PRIMITIVE_TO_CHECK_CLASS_MAP.put(Boolean.class, boolean.class);
+    }
+
     private ClassUtil() {
     }
 
@@ -18,47 +33,14 @@ public class ClassUtil {
         List<List<Class>> classPosibilitys = Lists.newArrayList();
         Arrays.stream(types).forEach(type -> {
             List<Class> possibleClasses = Lists.newArrayList();
-            if (type == Byte.class) {
-                possibleClasses.add(byte.class);
-            } else if (type == Short.class) {
-                possibleClasses.add(short.class);
-            } else if (type == Integer.class) {
-                possibleClasses.add(int.class);
-            } else if (type == Long.class) {
-                possibleClasses.add(long.class);
-            } else if (type == Float.class) {
-                possibleClasses.add(float.class);
-            } else if (type == Double.class) {
-                possibleClasses.add(double.class);
-            } else if (type == Character.class) {
-                possibleClasses.add(char.class);
-            } else if (type == Boolean.class) {
-                possibleClasses.add(boolean.class);
-            } else if (type == byte.class) {
-                possibleClasses.add(byte.class);
-                type = Byte.class;
-            } else if (type == short.class) {
-                possibleClasses.add(short.class);
-                type = Short.class;
-            } else if (type == int.class) {
-                possibleClasses.add(int.class);
-                type = Integer.class;
-            } else if (type == long.class) {
-                possibleClasses.add(long.class);
-                type = Long.class;
-            } else if (type == float.class) {
-                possibleClasses.add(float.class);
-                type = Float.class;
-            } else if (type == double.class) {
-                possibleClasses.add(double.class);
-                type = Double.class;
-            } else if (type == char.class) {
-                possibleClasses.add(char.class);
-                type = Character.class;
-            } else if (type == boolean.class) {
-                possibleClasses.add(boolean.class);
-                type = Boolean.class;
+
+            if (PRIMITIVE_TO_CHECK_CLASS_MAP.containsKey(type)) {
+                possibleClasses.add(PRIMITIVE_TO_CHECK_CLASS_MAP.get(type));
+            } else if (PRIMITIVE_TO_CHECK_CLASS_MAP.inverse().containsKey(type)) {
+                possibleClasses.add(type);
+                type = PRIMITIVE_TO_CHECK_CLASS_MAP.inverse().get(type);
             }
+
             do {
                 possibleClasses.add(type);
                 possibleClasses.addAll(Arrays.asList(type.getInterfaces()));
@@ -77,7 +59,7 @@ public class ClassUtil {
                 consumerInstance.add(set.get((i / j) % set.size()));
                 j *= set.size();
             }
-//            System.out.println("Searching with " + consumerInstance);
+
             if (consumer.test(consumerInstance.stream().toArray(Class[]::new)))
                 return;
         }
