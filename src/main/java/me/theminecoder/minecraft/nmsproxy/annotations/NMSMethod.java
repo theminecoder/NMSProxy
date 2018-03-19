@@ -14,6 +14,4 @@ public @interface NMSMethod {
 
     NMSVersionName[] versionNames() default {};
 
-    boolean staticMethod() default false;
-
 }
