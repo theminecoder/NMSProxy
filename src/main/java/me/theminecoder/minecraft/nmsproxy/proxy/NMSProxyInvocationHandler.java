@@ -3,7 +3,7 @@ package me.theminecoder.minecraft.nmsproxy.proxy;
 import me.theminecoder.minecraft.nmsproxy.NMSProxy;
 import me.theminecoder.minecraft.nmsproxy.annotations.NMSField;
 import me.theminecoder.minecraft.nmsproxy.annotations.NMSMethod;
-import me.theminecoder.minecraft.nmsproxy.annotations.NMSStaticMethod;
+import me.theminecoder.minecraft.nmsproxy.annotations.NMSStatic;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -19,7 +19,7 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
     private final NMSProxyInvocationMapper invocationMapper;
     private final NMSProxyProvider proxyProvider;
 
-    public NMSProxyInvocationHandler(Object handle, NMSProxyInvocationMapper invocationMapper, NMSProxyProvider proxyProvider) {
+    NMSProxyInvocationHandler(Object handle, NMSProxyInvocationMapper invocationMapper, NMSProxyProvider proxyProvider) {
         this.handle = handle;
         this.invocationMapper = invocationMapper;
         this.proxyProvider = proxyProvider;
@@ -39,7 +39,7 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
 
             Method nmsMethod = invocationMapper.findNMSMethod((Class<? extends NMSProxy>) proxy.getClass().getInterfaces()[0], method, nmsMethodAnnotation, fixedArgTypes);
 
-            Object invokerObject = method.getAnnotation(NMSStaticMethod.class) != null ? null : handle;
+            Object invokerObject = method.getAnnotation(NMSStatic.class) != null ? null : handle;
             Object returnObject = nmsMethod.invoke(invokerObject, fixedArgs);
 
             if (returnObject == null) {
@@ -56,11 +56,13 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
 
             Field field = invocationMapper.findNMSField((Class<? extends NMSProxy>) proxy.getClass().getInterfaces()[0], method, fieldAnnotation);
 
+            Object invokerObject = method.getAnnotation(NMSStatic.class) != null ? null : handle;
             if (fieldAnnotation.type() == NMSField.Type.GETTER) {
                 if (args != null && args.length != 0) {
                     throw new IllegalArgumentException("Must have 0 arguments on proxy method!");
                 }
-                Object value = field.get(this.handle);
+
+                Object value = field.get(invokerObject);
                 if (NMSProxy.class.isAssignableFrom(method.getReturnType())) {
                     value = proxyProvider.getNMSObject((Class<? extends NMSProxy>) method.getReturnType(), value);
                 }
@@ -70,7 +72,7 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
                     throw new IllegalArgumentException("Must only pass the new value to set!");
                 }
 
-                field.set(this.handle, proxyProvider.unwrapArgument(args[0]));
+                field.set(invokerObject, proxyProvider.unwrapArgument(args[0]));
                 return null;
             }
         } else {

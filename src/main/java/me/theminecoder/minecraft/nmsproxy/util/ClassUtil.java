@@ -29,8 +29,8 @@ public class ClassUtil {
     private ClassUtil() {
     }
 
-    public static void eachType(Class[] types, Predicate<Class[]> consumer) {
-        List<List<Class>> classPosibilitys = Lists.newArrayList();
+    public static void forEachClassPossibility(Class[] types, Predicate<Class[]> consumer) {
+        List<List<Class>> classPossibilities = Lists.newArrayList();
         Arrays.stream(types).forEach(type -> {
             List<Class> possibleClasses = Lists.newArrayList();
 
@@ -47,15 +47,15 @@ public class ClassUtil {
                 type = type.getSuperclass();
             } while (type != Object.class);
             possibleClasses.add(Object.class);
-            classPosibilitys.add(possibleClasses);
+            classPossibilities.add(possibleClasses);
         });
 
         int solutions = 1;
-        for (int i = 0; i < classPosibilitys.size(); solutions *= classPosibilitys.get(i).size(), i++) ;
+        for (int i = 0; i < classPossibilities.size(); solutions *= classPossibilities.get(i).size(), i++) ;
         for (int i = 0; i < solutions; i++) {
             int j = 1;
             List<Class> consumerInstance = Lists.newArrayList();
-            for (List<Class> set : classPosibilitys) {
+            for (List<Class> set : classPossibilities) {
                 consumerInstance.add(set.get((i / j) % set.size()));
                 j *= set.size();
             }

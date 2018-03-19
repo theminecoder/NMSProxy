@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static me.theminecoder.minecraft.nmsproxy.NMSProxyPlugin.NMS_VERSION;
-import static me.theminecoder.minecraft.nmsproxy.util.ClassUtil.eachType;
+import static me.theminecoder.minecraft.nmsproxy.util.ClassUtil.forEachClassPossibility;
 
 /**
  * @author theminecoder
@@ -29,7 +29,7 @@ public class NMSProxyInvocationMapper {
     private final Map<Class, Map<Method, Field>> proxyToNMSFieldMap = Maps.newConcurrentMap();
     private final Table<Class, Class[], Constructor> proxyToNMSConstructorMap = HashBasedTable.create();
 
-    public NMSProxyInvocationMapper(BiMap<Class, Class> proxyToNMSClassMap) {
+    NMSProxyInvocationMapper(BiMap<Class, Class> proxyToNMSClassMap) {
         this.proxyToNMSClassMap = proxyToNMSClassMap;
     }
 
@@ -52,7 +52,7 @@ public class NMSProxyInvocationMapper {
 
             AtomicReference<Method> methodSearchRef = new AtomicReference<>();
             String finalMethodName = methodName;
-            eachType(fixedArgTypes, (searchTypes) -> {
+            forEachClassPossibility(fixedArgTypes, (searchTypes) -> {
                 Class searchClass = nmsClass;
                 do {
                     try {
@@ -129,7 +129,7 @@ public class NMSProxyInvocationMapper {
 
         if (constructor == null) {
             AtomicReference<Constructor> constructerSearchRef = new AtomicReference<>();
-            eachType(fixedArgTypes, (searchTypes) -> {
+            forEachClassPossibility(fixedArgTypes, (searchTypes) -> {
                 try {
                     constructerSearchRef.set(nmsClass.getDeclaredConstructor(searchTypes));
                     return true;
