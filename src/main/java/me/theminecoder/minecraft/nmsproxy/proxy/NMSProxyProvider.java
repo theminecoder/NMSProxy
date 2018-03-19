@@ -10,7 +10,6 @@ import me.theminecoder.minecraft.nmsproxy.annotations.NMSClass;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.dynamic.DynamicType;
-import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.FixedValue;
 import net.bytebuddy.implementation.MethodCall;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
@@ -21,6 +20,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +33,8 @@ public final class NMSProxyProvider {
     private BiMap<Class, Class> proxyToNMSClassMap = HashBiMap.create();
     private final Map<Class, DynamicType.Loaded> proxyToNMSSubclassMap = Maps.newHashMap();
     private NMSProxyInvocationMapper invocationMapper = new NMSProxyInvocationMapper(proxyToNMSClassMap);
+
+    private Map<Object, NMSProxy> proxyInstances = new WeakHashMap<>();
 
     private NMSProxyProvider() {
     }
@@ -68,10 +70,18 @@ public final class NMSProxyProvider {
 
     public <T extends NMSProxy> T getNMSObject(Class<T> clazz, Object object) {
         registerNMSClasses(clazz);
-        if (!proxyToNMSClassMap.get(clazz).isAssignableFrom(object.getClass())) {
-            throw new IllegalStateException("Object is not of type " + proxyToNMSClassMap.get(clazz).getCanonicalName() + "!");
+
+        T proxyObject = (T) proxyInstances.get(object);
+
+        if (proxyObject == null) {
+            if (!proxyToNMSClassMap.get(clazz).isAssignableFrom(object.getClass())) {
+                throw new IllegalStateException("Object is not of type " + proxyToNMSClassMap.get(clazz).getCanonicalName() + "!");
+            }
+            proxyObject = (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new NMSProxyInvocationHandler(object, invocationMapper, this));
+            proxyInstances.put(object, proxyObject);
         }
-        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new NMSProxyInvocationHandler(object, invocationMapper, this));
+
+        return proxyObject;
     }
 
     public <T extends NMSProxy> T constructNMSObject(Class<T> clazz, Object... params) throws ReflectiveOperationException {
@@ -96,7 +106,7 @@ public final class NMSProxyProvider {
         DynamicType.Loaded<Object> dynamicType = proxyToNMSSubclassMap.get(proxyClass);
         if (dynamicType == null) {
             Class nmsClass = proxyToNMSClassMap.get(proxyClass);
-            DynamicType.Builder<Object> builder = new ByteBuddy().subclass(nmsClass).name(clazz.getCanonicalName()+"$RuntimeGenerated").implement(clazz.getInterfaces());
+            DynamicType.Builder<Object> builder = new ByteBuddy().subclass(nmsClass).name(clazz.getCanonicalName() + "$RuntimeGenerated").implement(clazz.getInterfaces());
 
             System.out.println("[SUBCLASSING][" + nmsClass.getSimpleName() + "->" + clazz.getSimpleName() + "] NMS Class Modifiers: " + Modifier.toString(nmsClass.getModifiers()));
             System.out.println("[SUBCLASSING][" + nmsClass.getSimpleName() + "->" + clazz.getSimpleName() + "] Methods needing to be implemented for \"" + nmsClass.getCanonicalName() + "\":");
