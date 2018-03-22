@@ -65,12 +65,25 @@ public final class NMSProxyProvider {
         proxyToNMSClassMap.put(clazz, nmsClass);
     }
 
+    /**
+     * Generates a static only proxy to an NMS class
+     *
+     * @param clazz {@link NMSClass} annotated {@link NMSProxy} interface.
+     * @return Generated Proxy
+     */
     public <T extends NMSProxy> T getStaticNMSObject(Class<T> clazz) {
         registerNMSClasses(clazz);
 
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new NMSProxyInvocationHandler(null, invocationMapper, this));
     }
 
+    /**
+     * Generates a proxy to an NMS class instance
+     *
+     * @param clazz {@link NMSClass} annotated {@link NMSProxy} interface.
+     * @param object Object to proxy
+     * @return Generated Proxy
+     */
     public <T extends NMSProxy> T getNMSObject(Class<T> clazz, Object object) {
         registerNMSClasses(clazz);
 
@@ -81,6 +94,13 @@ public final class NMSProxyProvider {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new NMSProxyInvocationHandler(object, invocationMapper, this));
     }
 
+    /**
+     * Constructs and returns a NMS object wrapped in a proxy.
+     * @param clazz {@link NMSClass} annotated {@link NMSProxy} interface class
+     * @param params Objects to pass to the constructor (NMSProxy instances will be converted to their actual objects for you)
+     * @return The constructed NMS object wrapped in a proxy.
+     * @throws ReflectiveOperationException
+     */
     public <T extends NMSProxy> T constructNMSObject(Class<T> clazz, Object... params) throws ReflectiveOperationException {
         registerNMSClasses(clazz);
 
@@ -92,6 +112,17 @@ public final class NMSProxyProvider {
         return getNMSObject(clazz, nmsObject);
     }
 
+    /**
+     * Constructs and returns an object that is a subclass of another NMS class.
+     *
+     * Something of note here is that the class you use to define the subclass is not the same class you get back.
+     * This is due to the use of a dynamic class generator to do the backend work with subclassing.
+     *
+     * @param clazz Class implementing another {@link NMSProxy} and {@link NMSSubclass}
+     * @param params Objects to pass to the constructor of the final subclass
+     * @return The constructed object (Note that this is not wrapped in a proxy)
+     * @throws ReflectiveOperationException
+     */
     public <T extends NMSSubclass> T constructNMSSubclass(Class<T> clazz, Object... params) throws ReflectiveOperationException {
         if (clazz.getInterfaces().length == 0 || NMSProxy.class.isAssignableFrom(clazz.getInterfaces()[0])) {
             throw new IllegalArgumentException("Class does not implement a NMSProxy interface");
