@@ -20,7 +20,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -33,8 +32,6 @@ public final class NMSProxyProvider {
     private BiMap<Class, Class> proxyToNMSClassMap = HashBiMap.create();
     private final Map<Class, DynamicType.Loaded> proxyToNMSSubclassMap = Maps.newHashMap();
     private NMSProxyInvocationMapper invocationMapper = new NMSProxyInvocationMapper(proxyToNMSClassMap);
-
-    private Map<Object, NMSProxy> proxyInstances = new WeakHashMap<>();
 
     private NMSProxyProvider() {
     }
@@ -68,20 +65,20 @@ public final class NMSProxyProvider {
         proxyToNMSClassMap.put(clazz, nmsClass);
     }
 
+    public <T extends NMSProxy> T getStaticNMSObject(Class<T> clazz) {
+        registerNMSClasses(clazz);
+
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new NMSProxyInvocationHandler(null, invocationMapper, this));
+    }
+
     public <T extends NMSProxy> T getNMSObject(Class<T> clazz, Object object) {
         registerNMSClasses(clazz);
 
-        T proxyObject = (T) proxyInstances.get(object);
-
-        if (proxyObject == null) {
-            if (!proxyToNMSClassMap.get(clazz).isAssignableFrom(object.getClass())) {
-                throw new IllegalStateException("Object is not of type " + proxyToNMSClassMap.get(clazz).getCanonicalName() + "!");
-            }
-            proxyObject = (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new NMSProxyInvocationHandler(object, invocationMapper, this));
-            proxyInstances.put(object, proxyObject);
+        if (!proxyToNMSClassMap.get(clazz).isAssignableFrom(object.getClass())) {
+            throw new IllegalStateException("Object is not of type " + proxyToNMSClassMap.get(clazz).getCanonicalName() + "!");
         }
 
-        return proxyObject;
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new NMSProxyInvocationHandler(object, invocationMapper, this));
     }
 
     public <T extends NMSProxy> T constructNMSObject(Class<T> clazz, Object... params) throws ReflectiveOperationException {

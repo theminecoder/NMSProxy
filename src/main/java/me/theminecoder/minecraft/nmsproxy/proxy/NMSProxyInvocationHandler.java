@@ -31,6 +31,18 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
             return handle;
         }
 
+        if (method.getName().equals("getStaticProxyObject")) {
+            if (handle == null) {
+                return this;
+            }
+
+            return proxyProvider.getStaticNMSObject((Class<? extends NMSProxy>) proxy.getClass().getInterfaces()[0]);
+        }
+
+        if (handle == null && method.getAnnotation(NMSStatic.class) == null) {
+            throw new IllegalStateException("Proxy method \""+method+"\" is attempting to call to instance method/field on a static proxy. Please mark the proxy method with @NMSStatic");
+        }
+
         if (method.getAnnotation(NMSMethod.class) != null || method.getDeclaringClass() == Object.class) {
             NMSMethod nmsMethodAnnotation = method.getAnnotation(NMSMethod.class);
 
@@ -44,6 +56,10 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
 
             if (returnObject == null) {
                 return null;
+            }
+
+            if (method.getName().equals("toString") && method.getParameterCount() == 0) {
+                return "Proxy|" + proxy.getClass().getInterfaces()[0].getCanonicalName() + "(" + returnObject + ")";
             }
 
             if (NMSProxy.class.isAssignableFrom(method.getReturnType())) {
