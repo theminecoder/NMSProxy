@@ -5,6 +5,8 @@ import me.theminecoder.minecraft.nmsproxy.annotations.NMSField;
 import me.theminecoder.minecraft.nmsproxy.annotations.NMSMethod;
 import me.theminecoder.minecraft.nmsproxy.annotations.NMSStatic;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -14,6 +16,8 @@ import java.util.Arrays;
  * @author theminecoder
  */
 public class NMSProxyInvocationHandler implements InvocationHandler {
+
+    private static Constructor<MethodHandles.Lookup> methodLookupConstructor;
 
     private final Object handle;
     private final NMSProxyInvocationMapper invocationMapper;
@@ -39,8 +43,20 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
             return proxyProvider.getStaticNMSObject((Class<? extends NMSProxy>) proxy.getClass().getInterfaces()[0]);
         }
 
+        if (method.isDefault()) {
+            final Class<?> declaringClass = method.getDeclaringClass();
+            if (methodLookupConstructor == null) {
+                methodLookupConstructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
+                methodLookupConstructor.setAccessible(true);
+            }
+            return methodLookupConstructor.newInstance(declaringClass, -1) //Trusted Flag
+                    .unreflectSpecial(method, declaringClass)
+                    .bindTo(proxy)
+                    .invokeWithArguments(args);
+        }
+
         if (handle == null && method.getAnnotation(NMSStatic.class) == null) {
-            throw new IllegalStateException("Proxy method \""+method+"\" is attempting to call to instance method/field on a static proxy. Please mark the proxy method with @NMSStatic");
+            throw new IllegalStateException("Proxy method \"" + method + "\" is attempting to call to instance method/field on a static proxy. Please mark the proxy method with @NMSStatic");
         }
 
         if (method.getAnnotation(NMSMethod.class) != null || method.getDeclaringClass() == Object.class) {
