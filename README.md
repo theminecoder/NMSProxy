@@ -4,8 +4,8 @@ An easy way to work with nms, without the hassle of importing spigot.
 
 ## TODO
 - [X] Proxying to NMS Objects
-- [-] Subclassing NMS Objects
-- [] Mixin NMS Editing
+- [ ] Subclassing NMS Objects _In progress_
+- [ ] Mixin NMS Editing
 
 ### How to use
 
