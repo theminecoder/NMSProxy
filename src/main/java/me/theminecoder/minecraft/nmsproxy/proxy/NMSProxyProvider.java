@@ -13,8 +13,11 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.FixedValue;
 import net.bytebuddy.implementation.MethodCall;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
+import net.bytebuddy.pool.TypePool;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -30,7 +33,7 @@ public final class NMSProxyProvider {
     private static final Map<JavaPlugin, NMSProxyProvider> PLUGIN_INSTANCES = Maps.newHashMap();
 
     private BiMap<Class, Class> proxyToNMSClassMap = HashBiMap.create();
-    private final Map<Class, DynamicType.Loaded> proxyToNMSSubclassMap = Maps.newHashMap();
+    private static final Map<Class, DynamicType.Loaded> proxyToNMSSubclassMap = Maps.newHashMap(); //Can't have plugins overwriting each other
     private NMSProxyInvocationMapper invocationMapper = new NMSProxyInvocationMapper(proxyToNMSClassMap);
 
     private NMSProxyProvider() {
@@ -150,7 +153,7 @@ public final class NMSProxyProvider {
             }
 
             for (Method method : clazz.getDeclaredMethods()) {
-                builder.defineMethod(method.getName(), method.getReturnType(), method.getModifiers())
+                builder = builder.defineMethod(method.getName(), method.getReturnType(), method.getModifiers())
                         .withParameters(Arrays.stream(method.getParameterTypes()).map(type -> {
                             if (NMSProxy.class.isAssignableFrom(type)) {
                                 registerNMSClasses((Class<? extends NMSProxy>) type);
@@ -162,9 +165,9 @@ public final class NMSProxyProvider {
                         .intercept(Advice.to(NMSProxySubclassAdvice.class).wrap(MethodCall.invoke(method)));
             }
 
-            builder.defineMethod("getProxyHandle", Object.class, Modifier.PUBLIC).intercept(FixedValue.self());
+            builder = builder.defineMethod("getProxyHandle", Object.class, Modifier.PUBLIC).intercept(FixedValue.self());
 
-            dynamicType = builder.make().load(clazz.getClassLoader());
+            dynamicType = builder.make(TypePool.ClassLoading.of(clazz.getClassLoader())).load(clazz.getClassLoader());
             proxyToNMSSubclassMap.put(clazz, dynamicType);
         }
 
