@@ -20,7 +20,7 @@ projects.
     <dependency>
         <groupId>com.github.theminecoder</groupId>
         <artifactId>NMSProxy</artifactId>
-        <version>0.2</version>
+        <version>0.3</version>
         <scope>provided</scope>
     </dependency>
 </dependencies>	
