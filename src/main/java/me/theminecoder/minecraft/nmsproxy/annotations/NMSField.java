@@ -17,7 +17,7 @@ public @interface NMSField {
         SETTER
     }
 
-    Type type();
+    Type value();
 
     NMSVersionName[] versionNames() default {};
 

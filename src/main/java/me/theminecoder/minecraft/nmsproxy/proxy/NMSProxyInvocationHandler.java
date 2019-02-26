@@ -89,7 +89,7 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
             Field field = invocationMapper.findNMSField((Class<? extends NMSProxy>) proxy.getClass().getInterfaces()[0], method, fieldAnnotation);
 
             Object invokerObject = method.getAnnotation(NMSStatic.class) != null ? null : handle;
-            if (fieldAnnotation.type() == NMSField.Type.GETTER) {
+            if (fieldAnnotation.value() == NMSField.Type.GETTER) {
                 if (args != null && args.length != 0) {
                     throw new IllegalArgumentException("Must have 0 arguments on proxy method!");
                 }
