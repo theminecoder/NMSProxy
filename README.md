@@ -26,8 +26,3 @@ projects.
 </dependencies>	
 ```
 
-## TODO
-- [X] Proxying to NMS Objects
-- [ ] Subclassing NMS Objects _In progress_
-- [ ] Mixin NMS Editing
-
