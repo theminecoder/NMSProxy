@@ -69,6 +69,22 @@ public final class NMSProxyProvider {
     }
 
     /**
+     * Checks if the passed NMS object is an instance of the passed class
+     *
+     * @param object Object to check
+     * @param clazz  Class to check
+     */
+    public boolean isInstanceOf(Object object, Class<? extends NMSProxy> clazz) {
+        registerNMSClasses(clazz);
+
+        if (object instanceof NMSProxy) {
+            object = ((NMSProxy) object).getProxyHandle();
+        }
+
+        return proxyToNMSClassMap.get(clazz).isAssignableFrom(object.getClass());
+    }
+
+    /**
      * Generates a static only proxy to an NMS class
      *
      * @param clazz {@link NMSClass} annotated {@link NMSProxy} interface.
@@ -83,7 +99,7 @@ public final class NMSProxyProvider {
     /**
      * Generates a proxy to an NMS class instance
      *
-     * @param clazz {@link NMSClass} annotated {@link NMSProxy} interface.
+     * @param clazz  {@link NMSClass} annotated {@link NMSProxy} interface.
      * @param object Object to proxy
      * @return Generated Proxy
      */
@@ -99,7 +115,8 @@ public final class NMSProxyProvider {
 
     /**
      * Constructs and returns a NMS object wrapped in a proxy.
-     * @param clazz {@link NMSClass} annotated {@link NMSProxy} interface class
+     *
+     * @param clazz  {@link NMSClass} annotated {@link NMSProxy} interface class
      * @param params Objects to pass to the constructor (NMSProxy instances will be converted to their actual objects for you)
      * @return The constructed NMS object wrapped in a proxy.
      * @throws ReflectiveOperationException
@@ -117,11 +134,11 @@ public final class NMSProxyProvider {
 
     /**
      * Constructs and returns an object that is a subclass of another NMS class.
-     *
+     * <p>
      * Something of note here is that the class you use to define the subclass is not the same class you get back.
      * This is due to the use of a dynamic class generator to do the backend work with subclassing.
      *
-     * @param clazz Class implementing another {@link NMSProxy} and {@link NMSSubclass}
+     * @param clazz  Class implementing another {@link NMSProxy} and {@link NMSSubclass}
      * @param params Objects to pass to the constructor of the final subclass
      * @return The constructed object (Note that this is not wrapped in a proxy)
      * @throws ReflectiveOperationException
@@ -171,8 +188,7 @@ public final class NMSProxyProvider {
             proxyToNMSSubclassMap.put(clazz, dynamicType);
         }
 
-        return (T) dynamicType.getLoaded().getConstructor(Arrays.stream(params).map(Object::getClass).toArray(Class[]::new))
-                .newInstance(params);
+        return (T) dynamicType.getLoaded().getConstructor(Arrays.stream(params).map(Object::getClass).toArray(Class[]::new)).newInstance(params);
     }
 
     Object[] unwrapArguments(Object[] args) {
