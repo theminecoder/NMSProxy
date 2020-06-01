@@ -5,6 +5,8 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import me.theminecoder.minecraft.nmsproxy.NMSProxy;
 import me.theminecoder.minecraft.nmsproxy.annotations.NMSClass;
+import me.theminecoder.minecraft.nmsproxy.util.NullReference;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Proxy;
@@ -14,7 +16,22 @@ import java.util.Map;
 /**
  * @author theminecoder
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public final class NMSProxyProvider {
+
+    public static final String NMS_VERSION;
+
+    static {
+        String LOADED_VERSION;
+        try {
+            String packageName = Bukkit.getServer().getClass().getPackage().getName();
+            LOADED_VERSION = packageName.substring(packageName.lastIndexOf(".") + 1);
+        } catch (LinkageError e) {
+            //Not loaded in bukkit context
+            LOADED_VERSION = "";
+        }
+        NMS_VERSION = LOADED_VERSION;
+    }
 
     private static final Map<JavaPlugin, NMSProxyProvider> PLUGIN_INSTANCES = Maps.newHashMap();
 
@@ -43,9 +60,23 @@ public final class NMSProxyProvider {
             throw new IllegalStateException("NMSProxy interfaces must have a valid @NMSClass annotation");
         }
 
+        // this is by design
+        //noinspection StringEquality
+        if(nmsClassAnnotation.value() == NMSClass.USE_OTHER_VALUE && nmsClassAnnotation.className() == NMSClass.USE_OTHER_VALUE) {
+            throw new IllegalStateException("Please set the value property in the @NMSClass annotation of "+clazz);
+        }
+
+        String className;
+        //noinspection StringEquality
+        if(nmsClassAnnotation.value() != NMSClass.USE_OTHER_VALUE) {
+            className = nmsClassAnnotation.value();
+        } else {
+            className = nmsClassAnnotation.className();
+        }
+
         Class nmsClass;
         try {
-            nmsClass = Class.forName(nmsClassAnnotation.type().getClassName(nmsClassAnnotation.className()));
+            nmsClass = Class.forName(nmsClassAnnotation.type().getClassName(className)); //TODO Move %version% replacement here
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Class " + nmsClassAnnotation.className() + " (" + nmsClassAnnotation.type() + ") was not found!");
         }
@@ -109,8 +140,25 @@ public final class NMSProxyProvider {
     public <T extends NMSProxy> T constructNMSObject(Class<T> clazz, Object... params) throws ReflectiveOperationException {
         registerNMSClasses(clazz);
 
+        NullReference[] nullReferences = new NullReference[params.length];
         Object[] fixedArgs = unwrapArguments(params);
+
+        //pull out null references and swap them to null
+        for (int i = 0; i < fixedArgs.length; i++) {
+            if(fixedArgs[i] instanceof NullReference) {
+                nullReferences[i] = (NullReference) fixedArgs[i];
+                fixedArgs[i] = null;
+            }
+        }
+
         Class[] fixedArgTypes = Arrays.stream(fixedArgs).map(Object::getClass).toArray(Class[]::new);
+
+        //swap type search with null reference types
+        for (int i = 0; i < nullReferences.length; i++) {
+            if(nullReferences[i] != null) {
+                fixedArgTypes[i] = nullReferences[i].getType();
+            }
+        }
 
         Object nmsObject = invocationMapper.findNMSConstructor(clazz, fixedArgTypes).newInstance(fixedArgs);
 

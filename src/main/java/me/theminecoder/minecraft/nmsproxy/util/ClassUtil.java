@@ -11,7 +11,8 @@ import java.util.function.Predicate;
 /**
  * @author theminecoder
  */
-public class ClassUtil {
+@SuppressWarnings("rawtypes")
+public final class ClassUtil {
 
     private static final BiMap<Class, Class> PRIMITIVE_TO_CHECK_CLASS_MAP = HashBiMap.create();
 
@@ -51,6 +52,7 @@ public class ClassUtil {
         });
 
         int solutions = 1;
+        //noinspection StatementWithEmptyBody
         for (int i = 0; i < classPossibilities.size(); solutions *= classPossibilities.get(i).size(), i++) ;
         for (int i = 0; i < solutions; i++) {
             int j = 1;

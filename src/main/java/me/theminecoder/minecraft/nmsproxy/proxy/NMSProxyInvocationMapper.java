@@ -16,12 +16,13 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static me.theminecoder.minecraft.nmsproxy.NMSProxyPlugin.NMS_VERSION;
+import static me.theminecoder.minecraft.nmsproxy.proxy.NMSProxyProvider.NMS_VERSION;
 import static me.theminecoder.minecraft.nmsproxy.util.ClassUtil.forEachClassPossibility;
 
 /**
  * @author theminecoder
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class NMSProxyInvocationMapper {
 
     private final BiMap<Class, Class> proxyToNMSClassMap;

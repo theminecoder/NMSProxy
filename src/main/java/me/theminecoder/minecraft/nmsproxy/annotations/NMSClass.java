@@ -1,11 +1,11 @@
 package me.theminecoder.minecraft.nmsproxy.annotations;
 
-import me.theminecoder.minecraft.nmsproxy.NMSProxyPlugin;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import static me.theminecoder.minecraft.nmsproxy.proxy.NMSProxyProvider.NMS_VERSION;
 
 /**
  * @author theminecoder
@@ -13,6 +13,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NMSClass {
+
+    public static final String USE_OTHER_VALUE = " ** __USE_OTHER_VALUE__ ** ";
 
     public enum Type {
         NMS("net.minecraft.server.%version%."),
@@ -30,12 +32,22 @@ public @interface NMSClass {
         }
 
         public String getClassName(String className) {
-            return (prefix + className).replaceFirst("%version%", NMSProxyPlugin.NMS_VERSION);
+            return (prefix + className).replaceFirst("%version%", NMS_VERSION);
         }
     }
 
-    Type type();
+    /**
+     * @deprecated Going to remove in 2.0 in favour os just prepending it to the value manually
+     */
+    @Deprecated
+    Type type() default Type.OTHER;
 
-    String className();
+    /**
+     * @deprecated use value instead
+     */
+    @Deprecated
+    String className() default USE_OTHER_VALUE;
+
+    String value() default USE_OTHER_VALUE;
 
 }

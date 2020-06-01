@@ -17,8 +17,9 @@ public @interface NMSField {
         SETTER
     }
 
-    Type value();
+    Type value() default Type.GETTER;
 
+    //TODO move this into repeatable annotation
     NMSVersionName[] versionNames() default {};
 
 }

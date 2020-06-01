@@ -15,6 +15,7 @@ import java.util.Arrays;
 /**
  * @author theminecoder
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class NMSProxyInvocationHandler implements InvocationHandler {
 
     private static Constructor<MethodHandles.Lookup> methodLookupConstructor;
@@ -45,11 +46,21 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
 
         if (method.isDefault()) {
             final Class<?> declaringClass = method.getDeclaringClass();
+            boolean extraClass = false;
             if (methodLookupConstructor == null) {
-                methodLookupConstructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
+                try {
+                    // idk when they changed this but just in case
+                    //noinspection JavaReflectionMemberAccess
+                    methodLookupConstructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
+                } catch (NoSuchMethodException e) {
+                    methodLookupConstructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, Class.class, int.class);
+                    extraClass = true;
+                }
                 methodLookupConstructor.setAccessible(true);
             }
-            return methodLookupConstructor.newInstance(declaringClass, -1) //Trusted Flag
+            return (extraClass ?
+                    methodLookupConstructor.newInstance(declaringClass, null, -1) :
+                    methodLookupConstructor.newInstance(declaringClass, -1)) //Trusted Flag
                     .unreflectSpecial(method, declaringClass)
                     .bindTo(proxy)
                     .invokeWithArguments(args);
@@ -59,7 +70,7 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
             throw new IllegalStateException("Proxy method \"" + method + "\" is attempting to call to instance method/field on a static proxy. Please mark the proxy method with @NMSStatic");
         }
 
-        if (method.getAnnotation(NMSMethod.class) != null || method.getDeclaringClass() == Object.class) {
+        if (method.getAnnotation(NMSField.class) == null || method.getDeclaringClass() == Object.class) {
             NMSMethod nmsMethodAnnotation = method.getAnnotation(NMSMethod.class);
 
             Object[] fixedArgs = proxyProvider.unwrapArguments(args);
@@ -83,7 +94,7 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
             }
 
             return returnObject;
-        } else if (method.getAnnotation(NMSField.class) != null) {
+        } else {
             NMSField fieldAnnotation = method.getAnnotation(NMSField.class);
 
             Field field = invocationMapper.findNMSField((Class<? extends NMSProxy>) proxy.getClass().getInterfaces()[0], method, fieldAnnotation);
@@ -107,9 +118,6 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
                 field.set(invokerObject, proxyProvider.unwrapArgument(args[0]));
                 return null;
             }
-        } else {
-            System.out.println("method @'s = " + Arrays.toString(method.getAnnotations()));
-            throw new IllegalStateException("Proxy method \"" + method + "\" must have a annotation of either @NMSMethod or @NMSField");
         }
     }
 }

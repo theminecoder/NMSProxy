@@ -6,7 +6,7 @@
 
     <groupId>com.github.theminecoder</groupId>
     <artifactId>NMSProxy</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>NMSProxy</name>
@@ -68,12 +68,18 @@
         </repository>
     </repositories>
 
+    <!-- this isnt actually locked to any specific version of spigot or bungee, i just needed some base plugin classes -->
     <dependencies>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.12.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.md-5</groupId>
+            <artifactId>bungeecord-api</artifactId>
+            <version>1.15-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
