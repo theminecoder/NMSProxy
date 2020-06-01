@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import me.theminecoder.minecraft.nmsproxy.NMSProxy;
 import me.theminecoder.minecraft.nmsproxy.annotations.NMSClass;
 import me.theminecoder.minecraft.nmsproxy.util.NullReference;
+import net.md_5.bungee.api.plugin.Plugin;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -16,7 +17,7 @@ import java.util.Map;
 /**
  * @author theminecoder
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"rawtypes", "unchecked", "JavaDoc"})
 public final class NMSProxyProvider {
 
     public static final String NMS_VERSION;
@@ -33,21 +34,29 @@ public final class NMSProxyProvider {
         NMS_VERSION = LOADED_VERSION;
     }
 
-    private static final Map<JavaPlugin, NMSProxyProvider> PLUGIN_INSTANCES = Maps.newHashMap();
+    @Deprecated
+    private static final Map<Object, NMSProxyProvider> PLUGIN_INSTANCES = Maps.newHashMap();
 
-    private BiMap<Class, Class> proxyToNMSClassMap = HashBiMap.create();
-    private NMSProxyInvocationMapper invocationMapper = new NMSProxyInvocationMapper(proxyToNMSClassMap);
+    private final BiMap<Class, Class> proxyToNMSClassMap = HashBiMap.create();
+    private final NMSProxyInvocationMapper invocationMapper = new NMSProxyInvocationMapper(proxyToNMSClassMap);
 
-    private NMSProxyProvider() {
+    public NMSProxyProvider() {
     }
 
+    /**
+     * @deprecated Just make your own instance now.
+     */
+    @Deprecated
     public static NMSProxyProvider get(JavaPlugin plugin) {
-        NMSProxyProvider instance = PLUGIN_INSTANCES.get(plugin);
-        if (instance == null) {
-            instance = new NMSProxyProvider();
-            PLUGIN_INSTANCES.put(plugin, instance);
-        }
-        return instance;
+        return PLUGIN_INSTANCES.computeIfAbsent(plugin, __ -> new NMSProxyProvider());
+    }
+
+    /**
+     * @deprecated Just make your own instance now.
+     */
+    @Deprecated // Only making this to allow for copy/paste into bungee plugins
+    public static NMSProxyProvider get(Plugin plugin) {
+        return PLUGIN_INSTANCES.computeIfAbsent(plugin, __ -> new NMSProxyProvider());
     }
 
     private void registerNMSClasses(Class<? extends NMSProxy> clazz) {
@@ -133,7 +142,8 @@ public final class NMSProxyProvider {
      * Constructs and returns a NMS object wrapped in a proxy.
      *
      * @param clazz  {@link NMSClass} annotated {@link NMSProxy} interface class
-     * @param params Objects to pass to the constructor (NMSProxy instances will be converted to their actual objects for you)
+     * @param params Objects to pass to the constructor (NMSProxy instances will be converted to their actual objects for you).
+     *               Use of null must be modified to use a {@link NullReference} object instead, so the type of null is known.
      * @return The constructed NMS object wrapped in a proxy.
      * @throws ReflectiveOperationException
      */
@@ -141,22 +151,27 @@ public final class NMSProxyProvider {
         registerNMSClasses(clazz);
 
         NullReference[] nullReferences = new NullReference[params.length];
-        Object[] fixedArgs = unwrapArguments(params);
 
         //pull out null references and swap them to null
-        for (int i = 0; i < fixedArgs.length; i++) {
-            if(fixedArgs[i] instanceof NullReference) {
-                nullReferences[i] = (NullReference) fixedArgs[i];
-                fixedArgs[i] = null;
+        for (int i = 0; i < params.length; i++) {
+            if(params[i] == null) throw new IllegalArgumentException("null argument is not supported directly. Use a NullReference instead.");
+            if(params[i] instanceof NullReference) {
+                nullReferences[i] = (NullReference) params[i];
+                params[i] = null;
             }
         }
 
-        Class[] fixedArgTypes = Arrays.stream(fixedArgs).map(Object::getClass).toArray(Class[]::new);
+        Object[] fixedArgs = unwrapArguments(params);
+        Class[] fixedArgTypes = Arrays.stream(fixedArgs).map(arg -> arg != null ? arg.getClass() : null).toArray(Class[]::new);
 
-        //swap type search with null reference types
         for (int i = 0; i < nullReferences.length; i++) {
             if(nullReferences[i] != null) {
-                fixedArgTypes[i] = nullReferences[i].getType();
+                Class type = nullReferences[i].getType();
+                if (NMSProxy.class.isAssignableFrom(type)) {
+                    this.registerNMSClasses(type);
+                    type = proxyToNMSClassMap.get(type);
+                }
+                fixedArgTypes[i] = type;
             }
         }
 
