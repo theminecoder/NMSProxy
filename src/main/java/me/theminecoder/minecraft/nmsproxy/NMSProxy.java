@@ -15,4 +15,6 @@ public interface NMSProxy {
      */
     Object getProxyHandle();
 
+    boolean isProxyStatic();
+
 }

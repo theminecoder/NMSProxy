@@ -44,6 +44,10 @@ public class NMSProxyInvocationHandler implements InvocationHandler {
             return proxyProvider.getStaticNMSObject((Class<? extends NMSProxy>) proxy.getClass().getInterfaces()[0]);
         }
 
+        if(method.getName().equals("isProxyStatic")) {
+            return handle == null;
+        }
+
         if (method.isDefault()) {
             final Class<?> declaringClass = method.getDeclaringClass();
             boolean extraClass = false;
