@@ -1,3 +1,5 @@
+# Go use [reflection-remapper](https://github.com/jpenilla/reflection-remapper) instead. It has the same featureset, with support for mojang mappings. This wont be updated probably ever.
+
 # NMSProxy
 
 An easy way to work with nms, without the hassle of importing spigot.
